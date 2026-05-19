@@ -1,13 +1,20 @@
 locals {
+  _etcd_ca_cert_generated = one(tls_self_signed_cert.etcd-ca[*].cert_pem)
+  _etcd_ca_key_generated  = one(tls_private_key.etcd-ca[*].private_key_pem)
+  effective_etcd_ca_cert  = replace(coalesce(var.etcd_ca_cert, local._etcd_ca_cert_generated), "\\n", "\n")
+  effective_etcd_ca_key   = replace(coalesce(var.etcd_ca_key, local._etcd_ca_key_generated), "\\n", "\n")
+}
+
+locals {
   # etcd TLS assets map
   etcd_tls = {
-    "tls/etcd/etcd-client-ca.crt" = tls_self_signed_cert.etcd-ca.cert_pem,
+    "tls/etcd/etcd-client-ca.crt" = local.effective_etcd_ca_cert,
     "tls/etcd/etcd-client.crt"    = tls_locally_signed_cert.client.cert_pem,
     "tls/etcd/etcd-client.key"    = tls_private_key.client.private_key_pem
-    "tls/etcd/server-ca.crt"      = tls_self_signed_cert.etcd-ca.cert_pem,
+    "tls/etcd/server-ca.crt"      = local.effective_etcd_ca_cert,
     "tls/etcd/server.crt"         = tls_locally_signed_cert.server.cert_pem
     "tls/etcd/server.key"         = tls_private_key.server.private_key_pem
-    "tls/etcd/peer-ca.crt"        = tls_self_signed_cert.etcd-ca.cert_pem,
+    "tls/etcd/peer-ca.crt"        = local.effective_etcd_ca_cert,
     "tls/etcd/peer.crt"           = tls_locally_signed_cert.peer.cert_pem
     "tls/etcd/peer.key"           = tls_private_key.peer.private_key_pem
   }
@@ -16,12 +23,14 @@ locals {
 # etcd CA
 
 resource "tls_private_key" "etcd-ca" {
+  count     = var.etcd_ca_cert == null ? 1 : 0
   algorithm = "RSA"
   rsa_bits  = "2048"
 }
 
 resource "tls_self_signed_cert" "etcd-ca" {
-  private_key_pem = tls_private_key.etcd-ca.private_key_pem
+  count           = var.etcd_ca_cert == null ? 1 : 0
+  private_key_pem = tls_private_key.etcd-ca[0].private_key_pem
 
   subject {
     common_name  = "etcd-ca"
@@ -63,8 +72,8 @@ resource "tls_cert_request" "client" {
 resource "tls_locally_signed_cert" "client" {
   cert_request_pem = tls_cert_request.client.cert_request_pem
 
-  ca_private_key_pem = tls_private_key.etcd-ca.private_key_pem
-  ca_cert_pem        = tls_self_signed_cert.etcd-ca.cert_pem
+  ca_private_key_pem = local.effective_etcd_ca_key
+  ca_cert_pem        = local.effective_etcd_ca_cert
 
   validity_period_hours = 8760
 
@@ -101,8 +110,8 @@ resource "tls_cert_request" "server" {
 resource "tls_locally_signed_cert" "server" {
   cert_request_pem = tls_cert_request.server.cert_request_pem
 
-  ca_private_key_pem = tls_private_key.etcd-ca.private_key_pem
-  ca_cert_pem        = tls_self_signed_cert.etcd-ca.cert_pem
+  ca_private_key_pem = local.effective_etcd_ca_key
+  ca_cert_pem        = local.effective_etcd_ca_cert
 
   validity_period_hours = 8760
 
@@ -135,8 +144,8 @@ resource "tls_cert_request" "peer" {
 resource "tls_locally_signed_cert" "peer" {
   cert_request_pem = tls_cert_request.peer.cert_request_pem
 
-  ca_private_key_pem = tls_private_key.etcd-ca.private_key_pem
-  ca_cert_pem        = tls_self_signed_cert.etcd-ca.cert_pem
+  ca_private_key_pem = local.effective_etcd_ca_key
+  ca_cert_pem        = local.effective_etcd_ca_cert
 
   validity_period_hours = 8760
 

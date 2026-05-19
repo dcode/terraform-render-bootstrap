@@ -1,8 +1,17 @@
 locals {
+  # Intermediates using splat to safely handle count=0 when CA is injected
+  _kube_ca_cert_generated = one(tls_self_signed_cert.kube-ca[*].cert_pem)
+  _kube_ca_key_generated  = one(tls_private_key.kube-ca[*].private_key_pem)
+  # coalesce is safe here: when var is null count=1 (generated non-null); when var is set count=0 (var wins)
+  effective_k8s_ca_cert = replace(coalesce(var.k8s_ca_cert, local._kube_ca_cert_generated), "\\n", "\n")
+  effective_k8s_ca_key  = replace(coalesce(var.k8s_ca_key, local._kube_ca_key_generated), "\\n", "\n")
+}
+
+locals {
   # Kubernetes TLS assets map
   kubernetes_tls = {
-    "tls/k8s/ca.crt"              = tls_self_signed_cert.kube-ca.cert_pem,
-    "tls/k8s/ca.key"              = tls_private_key.kube-ca.private_key_pem,
+    "tls/k8s/ca.crt"              = local.effective_k8s_ca_cert,
+    "tls/k8s/ca.key"              = local.effective_k8s_ca_key,
     "tls/k8s/apiserver.crt"       = tls_locally_signed_cert.apiserver.cert_pem,
     "tls/k8s/apiserver.key"       = tls_private_key.apiserver.private_key_pem,
     "tls/k8s/service-account.pub" = tls_private_key.service-account.public_key_pem
@@ -13,12 +22,14 @@ locals {
 # Kubernetes CA (tls/{ca.crt,ca.key})
 
 resource "tls_private_key" "kube-ca" {
+  count     = var.k8s_ca_cert == null ? 1 : 0
   algorithm = "RSA"
   rsa_bits  = "2048"
 }
 
 resource "tls_self_signed_cert" "kube-ca" {
-  private_key_pem = tls_private_key.kube-ca.private_key_pem
+  count           = var.k8s_ca_cert == null ? 1 : 0
+  private_key_pem = tls_private_key.kube-ca[0].private_key_pem
 
   subject {
     common_name  = "kubernetes-ca"
@@ -66,8 +77,8 @@ resource "tls_cert_request" "apiserver" {
 resource "tls_locally_signed_cert" "apiserver" {
   cert_request_pem = tls_cert_request.apiserver.cert_request_pem
 
-  ca_private_key_pem = tls_private_key.kube-ca.private_key_pem
-  ca_cert_pem        = tls_self_signed_cert.kube-ca.cert_pem
+  ca_private_key_pem = local.effective_k8s_ca_key
+  ca_cert_pem        = local.effective_k8s_ca_cert
 
   validity_period_hours = 8760
 
@@ -97,8 +108,8 @@ resource "tls_cert_request" "controller-manager" {
 resource "tls_locally_signed_cert" "controller-manager" {
   cert_request_pem = tls_cert_request.controller-manager.cert_request_pem
 
-  ca_private_key_pem = tls_private_key.kube-ca.private_key_pem
-  ca_cert_pem        = tls_self_signed_cert.kube-ca.cert_pem
+  ca_private_key_pem = local.effective_k8s_ca_key
+  ca_cert_pem        = local.effective_k8s_ca_cert
 
   validity_period_hours = 8760
 
@@ -127,8 +138,8 @@ resource "tls_cert_request" "scheduler" {
 resource "tls_locally_signed_cert" "scheduler" {
   cert_request_pem = tls_cert_request.scheduler.cert_request_pem
 
-  ca_private_key_pem = tls_private_key.kube-ca.private_key_pem
-  ca_cert_pem        = tls_self_signed_cert.kube-ca.cert_pem
+  ca_private_key_pem = local.effective_k8s_ca_key
+  ca_cert_pem        = local.effective_k8s_ca_cert
 
   validity_period_hours = 8760
 
@@ -158,8 +169,8 @@ resource "tls_cert_request" "admin" {
 resource "tls_locally_signed_cert" "admin" {
   cert_request_pem = tls_cert_request.admin.cert_request_pem
 
-  ca_private_key_pem = tls_private_key.kube-ca.private_key_pem
-  ca_cert_pem        = tls_self_signed_cert.kube-ca.cert_pem
+  ca_private_key_pem = local.effective_k8s_ca_key
+  ca_cert_pem        = local.effective_k8s_ca_cert
 
   validity_period_hours = 8760
 
