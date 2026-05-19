@@ -138,3 +138,50 @@ variable "service_account_issuer" {
   description = "kube-apiserver service account token issuer (used as an identifier in 'iss' claims)"
   default     = "https://kubernetes.default.svc.cluster.local"
 }
+
+# Optional CA injection — when set, the provided cert/key pair is used instead of
+# generating a self-signed CA. All three CAs (kube, etcd, aggregation) are independent.
+# Public cert files can be committed to the repo; private keys should come via SOPS
+# (exported as TF_VAR_k8s_ca_key, TF_VAR_etcd_ca_key, TF_VAR_aggregation_ca_key).
+
+variable "k8s_ca_cert" {
+  type        = string
+  description = "PEM-encoded Kubernetes CA certificate. Null generates a self-signed CA."
+  default     = null
+  sensitive   = true
+}
+
+variable "k8s_ca_key" {
+  type        = string
+  description = "PEM-encoded Kubernetes CA private key. Required when k8s_ca_cert is set."
+  default     = null
+  sensitive   = true
+}
+
+variable "etcd_ca_cert" {
+  type        = string
+  description = "PEM-encoded etcd CA certificate. Null generates a self-signed CA."
+  default     = null
+  sensitive   = true
+}
+
+variable "etcd_ca_key" {
+  type        = string
+  description = "PEM-encoded etcd CA private key. Required when etcd_ca_cert is set."
+  default     = null
+  sensitive   = true
+}
+
+variable "aggregation_ca_cert" {
+  type        = string
+  description = "PEM-encoded Kubernetes front-proxy CA certificate. Null generates a self-signed CA."
+  default     = null
+  sensitive   = true
+}
+
+variable "aggregation_ca_key" {
+  type        = string
+  description = "PEM-encoded Kubernetes front-proxy CA private key. Required when aggregation_ca_cert is set."
+  default     = null
+  sensitive   = true
+}

@@ -35,7 +35,7 @@ output "assets_dist" {
 # etcd TLS assets
 
 output "etcd_ca_cert" {
-  value     = tls_self_signed_cert.etcd-ca.cert_pem
+  value     = local.effective_etcd_ca_cert
   sensitive = true
 }
 

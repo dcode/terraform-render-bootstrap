@@ -12,7 +12,7 @@ locals {
   kubeconfig-admin = templatefile("${path.module}/resources/kubeconfig-admin",
     {
       name         = var.cluster_name
-      ca_cert      = base64encode(tls_self_signed_cert.kube-ca.cert_pem)
+      ca_cert      = base64encode(local.effective_k8s_ca_cert)
       kubelet_cert = base64encode(tls_locally_signed_cert.admin.cert_pem)
       kubelet_key  = base64encode(tls_private_key.admin.private_key_pem)
       server       = format("https://%s:%s", var.api_servers[0], var.external_apiserver_port)
@@ -23,7 +23,7 @@ locals {
   kubeconfig-controller-manager = templatefile("${path.module}/resources/kubeconfig-admin",
     {
       name         = var.cluster_name
-      ca_cert      = base64encode(tls_self_signed_cert.kube-ca.cert_pem)
+      ca_cert      = base64encode(local.effective_k8s_ca_cert)
       kubelet_cert = base64encode(tls_locally_signed_cert.controller-manager.cert_pem)
       kubelet_key  = base64encode(tls_private_key.controller-manager.private_key_pem)
       server       = format("https://%s:%s", var.api_servers[0], var.external_apiserver_port)
@@ -34,7 +34,7 @@ locals {
   kubeconfig-scheduler = templatefile("${path.module}/resources/kubeconfig-admin",
     {
       name         = var.cluster_name
-      ca_cert      = base64encode(tls_self_signed_cert.kube-ca.cert_pem)
+      ca_cert      = base64encode(local.effective_k8s_ca_cert)
       kubelet_cert = base64encode(tls_locally_signed_cert.scheduler.cert_pem)
       kubelet_key  = base64encode(tls_private_key.scheduler.private_key_pem)
       server       = format("https://%s:%s", var.api_servers[0], var.external_apiserver_port)
@@ -44,7 +44,7 @@ locals {
   # Generated kubeconfig to bootstrap Kubelets
   kubeconfig-bootstrap = templatefile("${path.module}/resources/kubeconfig-bootstrap",
     {
-      ca_cert      = base64encode(tls_self_signed_cert.kube-ca.cert_pem)
+      ca_cert      = base64encode(local.effective_k8s_ca_cert)
       server       = format("https://%s:%s", var.api_servers[0], var.external_apiserver_port)
       token_id     = random_password.bootstrap-token-id.result
       token_secret = random_password.bootstrap-token-secret.result
