@@ -49,10 +49,10 @@ variable "container_images" {
     coredns                 = "registry.k8s.io/coredns/coredns:v1.13.1"
     flannel                 = "docker.io/flannel/flannel:v0.27.0"
     flannel_cni             = "quay.io/poseidon/flannel-cni:v0.4.2"
-    kube_apiserver          = "registry.k8s.io/kube-apiserver:v1.36.1"
-    kube_controller_manager = "registry.k8s.io/kube-controller-manager:v1.36.1"
-    kube_scheduler          = "registry.k8s.io/kube-scheduler:v1.36.1"
-    kube_proxy              = "registry.k8s.io/kube-proxy:v1.36.1"
+    kube_apiserver          = "registry.k8s.io/kube-apiserver:v1.37.2"
+    kube_controller_manager = "registry.k8s.io/kube-controller-manager:v1.37.2"
+    kube_scheduler          = "registry.k8s.io/kube-scheduler:v1.37.2"
+    kube_proxy              = "registry.k8s.io/kube-proxy:v1.37.2"
   }
 }
 
@@ -137,6 +137,12 @@ variable "service_account_issuer" {
   type        = string
   description = "kube-apiserver service account token issuer (used as an identifier in 'iss' claims)"
   default     = "https://kubernetes.default.svc.cluster.local"
+}
+
+variable "cloud_provider" {
+  type        = string
+  description = "Cloud provider to set on Kubernetes components (e.g. external)"
+  default     = null
 }
 
 # Optional CA injection — when set, the provided cert/key pair is used instead of

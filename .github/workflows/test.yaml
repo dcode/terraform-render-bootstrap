@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: terraform
         uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: 1.11.1
+          terraform_version: v1.17.1
 
       - name: fmt
         run: terraform fmt -check -diff -recursive
